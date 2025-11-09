@@ -1,0 +1,40 @@
+{
+  "landingCarousel": {
+    "tr": [
+      {
+        "title1": "Dergi",
+        "title2": "Çözümleri",
+        "imageLink": "/slider/h1-slider4.png",
+        "subText": "Ürününüze özel ölçü ve tasarımda, düşük adetlerden kitlesel üretime ölçeklenebilir kutu tasarımı.",
+        "tips": ["Test1", "Test2", "Test3", "Test4"],
+        "buttonLink": "/"
+      },
+      {
+        "title1": "Dergi",
+        "title2": "Çözümleri",
+        "imageLink": "/slider/h1-slider6.png",
+        "subText": "Ürününüze özel ölçü ve tasarımda, düşük adetlerden kitlesel üretime ölçeklenebilir kutu tasarımı.",
+        "tips": ["Test1", "Test2", "Test3", "Test4"],
+        "buttonLink": "/"
+      }
+    ],
+    "en": [
+      {
+        "title1": "Magazine",
+        "title2": "Solutions",
+        "imageLink": "/slider/h1-slider4.png",
+        "subText": "Custom-sized and designed packaging for your product, scalable from small quantities to mass production.",
+        "tips": ["Test1", "Test2", "Test3", "Test4"],
+        "buttonLink": "/"
+      },
+      {
+        "title1": "Magazine",
+        "title2": "Solutions",
+        "imageLink": "/slider/h1-slider6.png",
+        "subText": "Custom-sized and designed packaging for your product, scalable from small quantities to mass production.",
+        "tips": ["Test1", "Test2", "Test3", "Test4"],
+        "buttonLink": "/"
+      }
+    ]
+  }
+}

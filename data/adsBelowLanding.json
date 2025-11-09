@@ -1,0 +1,14 @@
+{
+  "tr": [
+    { "text": "Dünya çapında ücretsiz teslimat", "icon": "fa6-solid:truck-fast" },
+    { "text": "30 gün içinde çevrimiçi iade",   "icon": "game-icons:return-arrow" },
+    { "text": "Üst düzey destek",               "icon": "mdi:headset" },
+    { "text": "En uygun fiyat garantisi",       "icon": "bi:badge-ad-fill" }
+  ],
+  "en": [
+    { "text": "Free worldwide delivery",  "icon": "fa6-solid:truck-fast" },
+    { "text": "30-day online returns",    "icon": "game-icons:return-arrow" },
+    { "text": "Top-notch support",        "icon": "mdi:headset" },
+    { "text": "Low price guarantee",      "icon": "bi:badge-ad-fill" }
+  ]
+}

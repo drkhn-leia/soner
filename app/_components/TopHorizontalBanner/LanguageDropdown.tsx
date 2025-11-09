@@ -1,8 +1,8 @@
+// @/app/_components/TopHorizontalBanner/LanguageDropdown.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { useLanguage } from "@/components/LanguageProvider";
+import React, { useEffect, useRef, useState } from "react";
+import { useLanguage } from "@/lib/LanguageProvider";
 
 type Language = { code: string; name: string; is_default: boolean };
 
@@ -10,22 +10,74 @@ export default function Dropdown() {
   const { lang, setLang } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [languages, setLanguages] = useState<Language[]>([]);
-  const supabase = createSupabaseBrowserClient();
+  const btnRef = useRef<HTMLButtonElement | null>(null);
+  const popRef = useRef<HTMLDivElement | null>(null);
 
+  // Dilleri yerel API'den çek
   useEffect(() => {
-    supabase
-      .from("languages")
-      .select("code,name,is_default")
-      .order("is_default", { ascending: false })
-      .then(({ data }) => setLanguages(data ?? []));
-  }, [supabase]);
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/languages", { cache: "no-store" });
+        const data = await res.json();
+        if (!mounted) return;
+
+        const list: Language[] = data?.languages ?? [];
+        // Güvenli fallback (dosya boşsa bile dropdown çalışsın)
+        setLanguages(
+          list.length ? list : [
+            { code: "tr", name: "Türkçe", is_default: true },
+            { code: "en", name: "English", is_default: false },
+          ]
+        );
+      } catch {
+        if (!mounted) return;
+        setLanguages([
+          { code: "tr", name: "Türkçe", is_default: true },
+          { code: "en", name: "English", is_default: false },
+        ]);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  // Dışarı tıklayınca kapat
+  useEffect(() => {
+    if (!isOpen) return;
+    const handle = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (popRef.current?.contains(t)) return;
+      if (btnRef.current?.contains(t)) return;
+      setIsOpen(false);
+    };
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsOpen(false);
+    };
+    document.addEventListener("mousedown", handle);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("mousedown", handle);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, [isOpen]);
+
+  const onSelect = (code: string) => {
+    setIsOpen(false);
+    setLang(code);                     // Context + cookie + <html lang> (Provider içinde)
+    // Eğer server komponentleri cookie'ye göre veri çekiyorsa,
+    // LanguageProvider.setLang içinde router.refresh() ekleyebilirsiniz.
+  };
 
   return (
     <div className="relative inline-block text-left">
       <button
+        ref={btnRef}
         type="button"
         onClick={() => setIsOpen((s) => !s)}
         className="inline-flex items-center gap-2"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-label="Change language"
       >
         <span>{lang.toUpperCase()}</span>
         <svg className="w-2.5 h-2.5" viewBox="0 0 10 6" aria-hidden="true">
@@ -41,20 +93,21 @@ export default function Dropdown() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-28 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+        <div
+          ref={popRef}
+          className="absolute right-0 mt-2 w-32 rounded-lg shadow-lg bg-white ring-1 ring-black/5 z-50"
+          role="listbox"
+          aria-label="Languages"
+        >
           <ul className="py-1">
             {languages.map((l) => (
               <li key={l.code}>
                 <button
-                  onClick={() => {
-                    setIsOpen(false);
-                    setLang(l.code);
-                  }} // sadece state değişiyor
-                  className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                    lang === l.code
-                      ? "font-semibold text-blue-700"
-                      : "text-gray-700"
-                  }`}
+                  onClick={() => onSelect(l.code)}
+                  role="option"
+                  aria-selected={lang === l.code}
+                  className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${lang === l.code ? "font-semibold text-blue-700" : "text-gray-700"
+                    }`}
                 >
                   {l.name}
                 </button>

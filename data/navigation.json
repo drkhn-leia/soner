@@ -1,0 +1,30 @@
+{
+  "navigation": {
+    "en": [
+      { "label": "Home", "href": "/" },
+      {
+        "label": "Services",
+        "children": [
+          { "label": "Printing", "href": "/services/printing" },
+          { "label": "Design", "href": "/services/design" },
+          { "label": "Packaging", "href": "/services/packaging" }
+        ]
+      },
+      { "label": "About Us", "href": "/about" },
+      { "label": "Contact", "href": "/contact" }
+    ],
+    "tr": [
+      { "label": "Anasayfa", "href": "/" },
+      {
+        "label": "Hizmetler",
+        "children": [
+          { "label": "Baskı", "href": "/services/printing" },
+          { "label": "Tasarım", "href": "/services/design" },
+          { "label": "Paketleme", "href": "/services/packaging" }
+        ]
+      },
+      { "label": "Hakkımızda", "href": "/about" },
+      { "label": "İletişim", "href": "/contact" }
+    ]
+  }
+}

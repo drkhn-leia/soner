@@ -1,0 +1,19 @@
+{
+  "site_settings": {
+    "site_name": "Nost Copy",
+    "logo_url": "/logo.png",
+    "favicon_url": "/favicon.ico",
+    "phone": "+90 212 000 00 00",
+    "email": "info@example.com",
+    "address": "İstanbul, Türkiye",
+    "store_location_url": "https://maps.google.com/?q=Your+Store",
+    "facebook_url": "https://facebook.com/example",
+    "instagram_url": "https://instagram.com/example",
+    "twitter_url": "https://twitter.com/example",
+    "linkedin_url": "https://linkedin.com/company/example",
+    "whatsapp_url": "https://wa.me/900000000000",
+    "working_hours": "09:00 - 18:00",
+    "footer_text": "© 2025 Nost Copy. All rights reserved.",
+    "updated_at": "2025-11-09T18:00:00.000Z"
+  }
+}

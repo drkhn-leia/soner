@@ -1,8 +1,14 @@
+// @/app/_components/NavigationBar/_components/Dropdown.tsx
+
+
 "use client";
+import Link from "next/link";
+
+type NavItem = { label: string; href?: string | null };
 
 type DropdownProps = {
   label: string;
-  items: { name: string; href?: string }[];
+  items: NavItem[];
 };
 
 export default function Dropdown({ label, items }: DropdownProps) {
@@ -12,17 +18,22 @@ export default function Dropdown({ label, items }: DropdownProps) {
         {label}
       </button>
 
-      {/* Menü */}
       <ul
-        className="absolute top-full -mt-4 left-0 bg-white border border-gray-200 shadow-lg rounded-md py-2 w-40 
+        className="absolute top-full -mt-4 left-0 bg-white border border-gray-200 shadow-lg rounded-md py-2 w-48
         opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-300 z-10"
       >
         {items.map((item) => (
-          <li
-            key={item.name}
-            className="px-4 py-2 cursor-pointer text-gray-700 hover:text-blue-500 whitespace-nowrap"
-          >
-            {item.name}
+          <li key={item.label} className="px-4 py-2 whitespace-nowrap">
+            {item.href ? (
+              <Link
+                href={item.href}
+                className="text-gray-700 hover:text-blue-500 block"
+              >
+                {item.label}
+              </Link>
+            ) : (
+              <span className="text-gray-700">{item.label}</span>
+            )}
           </li>
         ))}
       </ul>

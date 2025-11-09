@@ -1,0 +1,16 @@
+{
+  "banners": [
+    {
+      "lang_code": "tr",
+      "promo_text": "Kargo bedava!",
+      "promo_cta": "Hemen incele",
+      "promo_url": "/kampanya"
+    },
+    {
+      "lang_code": "en",
+      "promo_text": "Free shipping!",
+      "promo_cta": "Shop now",
+      "promo_url": "/campaign"
+    }
+  ]
+}
