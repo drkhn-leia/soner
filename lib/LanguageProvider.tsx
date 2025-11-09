@@ -8,7 +8,7 @@ const LanguageContext = createContext<LangCtx | null>(null);
 
 export function LanguageProvider({
   children,
-  defaultLang = "en",
+  defaultLang = "tr",
 }: {
   children: React.ReactNode;
   defaultLang?: string;

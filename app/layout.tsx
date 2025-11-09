@@ -63,7 +63,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${oswald.variable} ${poppins.variable} ${onest.variable} antialiased`}
       >
-        <LanguageProvider defaultLang="defaultLang">
+        <LanguageProvider defaultLang="tr">
           {children}
         </LanguageProvider>
       </body>
