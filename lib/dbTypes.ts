@@ -1,4 +1,12 @@
-// @/lib/types.ts
+// @/lib/dbTypes.ts
+
+// #################################################################
+// Languages
+export type Language = { code: string; name: string; is_default: boolean };
+export type LanguagesDb = { languages: Language[] };
+
+// #################################################################
+
 export type NavItem = {
   label: string;
   href?: string | null;

@@ -6,6 +6,7 @@ import CircularText from "./CircularText/CircularText";
 
 type SliderCardProps = {
   title: string;
+  title2: string;
   description: string;
   ctaText?: string;
   stats?: Array<{ label: string; value: string }>;

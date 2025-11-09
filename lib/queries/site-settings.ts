@@ -1,16 +1,14 @@
 // lib/queries/site-settings.ts
-import { createClient } from "@supabase/supabase-js";
+// ✅ Supabase yok. Yerel JSON dosyalarını okuyor.
 
-/** İstersen bunu kendi util'ındaki createSupabaseServerClient ile değiştir. */
-function createSupabaseServerClient() {
-  const url = process.env.SUPABASE_URL!;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  return createClient(url, anon, { auth: { persistSession: false } });
-}
+import path from "path";
+import { promises as fs } from "fs";
+import { readSiteSettings, readBanners } from "@/lib/db";
+import type { SiteSettingsDb, BannersDb, Language } from "@/lib/dbTypes";
 
 /** --- Tipler --- */
 export type SiteSettings = {
-  id: string;
+  id?: string; // JSON'da yoksa undefined kalabilir
   site_name: string;
   logo_url: string | null;
   favicon_url: string | null;
@@ -25,12 +23,12 @@ export type SiteSettings = {
   whatsapp_url: string | null;
   working_hours: string | null;
   footer_text: string | null;
-  created_at: string | null;
-  updated_at: string | null;
+  created_at?: string | null; // JSON'da yoksa undefined
+  updated_at?: string | null; // JSON'da yoksa undefined
 };
 
 export type BannerRow = {
-  settings_id: string;
+  // Site settings alanlarının alt kümesi (banner bar’da ihtiyaç olanlar)
   site_name: string;
   logo_url: string | null;
   phone: string | null;
@@ -43,85 +41,136 @@ export type BannerRow = {
   whatsapp_url: string | null;
   footer_text: string | null;
   working_hours: string | null;
+
+  // Banner alanları
   lang_code: string;
   promo_text: string;
   promo_cta: string;
   promo_url: string | null;
 };
 
-/** --- Yardımcılar --- */
+/** --- Dahili yardımcılar --- */
+const DATA_DIR = path.join(process.cwd(), "data");
 
-/** Varsayılan dili getir (ör. 'en'). Yoksa 'en' döner. */
-export async function getDefaultLang(): Promise<string> {
-  const supabase = createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("languages")
-    .select("code")
-    .eq("is_default", true)
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    // prod ortamında swallow edebilir, loglayabilirsiniz
-    console.error("[getDefaultLang]", error.message);
-  }
-  return data?.code ?? "en";
-}
-
-/** site_settings: tek satır genel ayarlar */
-export async function getSiteSettings(): Promise<SiteSettings | null> {
-  const supabase = createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("site_settings")
-    .select("*")
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    console.error("[getSiteSettings]", error.message);
+async function readLanguagesJson(): Promise<Language[] | null> {
+  try {
+    const raw = await fs.readFile(
+      path.join(DATA_DIR, "languages.json"),
+      "utf-8"
+    );
+    const parsed = JSON.parse(raw) as { languages?: Language[] };
+    return parsed.languages ?? null;
+  } catch {
     return null;
   }
-  return data as SiteSettings | null;
+}
+
+/** boş/eksik değerleri güvenli şekilde normalize et */
+function normalizeSettings(
+  s: SiteSettingsDb["site_settings"] | undefined | null
+): SiteSettings | null {
+  if (!s) return null;
+  return {
+    id: (s as any).id,
+    site_name: s.site_name ?? "",
+    logo_url: s.logo_url ?? null,
+    favicon_url: s.favicon_url ?? null,
+    phone: s.phone ?? null,
+    email: s.email ?? null,
+    address: s.address ?? null,
+    store_location_url: s.store_location_url ?? null,
+    facebook_url: s.facebook_url ?? null,
+    instagram_url: s.instagram_url ?? null,
+    twitter_url: s.twitter_url ?? null,
+    linkedin_url: s.linkedin_url ?? null,
+    whatsapp_url: s.whatsapp_url ?? null,
+    working_hours: s.working_hours ?? null,
+    footer_text: s.footer_text ?? null,
+    created_at: (s as any).created_at ?? null,
+    updated_at: s.updated_at ?? null,
+  };
+}
+
+/** --- API eşleniği fonksiyonlar (Supabase'siz) --- */
+
+/** Varsayılan dili getir (languages.json → is_default=true). Yoksa 'en'. */
+export async function getDefaultLang(): Promise<string> {
+  const langs = await readLanguagesJson();
+  const def = langs?.find((l) => l.is_default);
+  return def?.code ?? "en";
+}
+
+/** site_settings.json → tek satır genel ayarlar */
+export async function getSiteSettings(): Promise<SiteSettings | null> {
+  try {
+    const data = await readSiteSettings(); // { site_settings: {...} }
+    return normalizeSettings(data?.site_settings) ?? null;
+  } catch (e) {
+    console.error("[getSiteSettings]", (e as Error).message);
+    return null;
+  }
 }
 
 /**
- * Banner'ı istenen dilde getir, yoksa varsayılan dile düş.
- * v_banner view'u kullanır.
+ * Banner'ı istenen dilde getir, yoksa varsayılana düş.
+ * Kaynak: /data/banners.json
  */
 export async function getBanner(lang?: string): Promise<BannerRow | null> {
-  const supabase = createSupabaseServerClient();
-  const wantLang = lang || (await getDefaultLang());
+  try {
+    const wantLang = lang || (await getDefaultLang());
+    const settings = await getSiteSettings();
+    const { banners = [] } = (await readBanners()) as BannersDb;
 
-  // Önce hedef dilde dene
-  let { data, error } = await supabase
-    .from("v_banner")
-    .select("*")
-    .eq("lang_code", wantLang)
-    .limit(1)
-    .maybeSingle();
+    // Önce istenen dilde ara
+    let b = banners.find((x) => x.lang_code === wantLang);
 
-  if (error) {
-    console.error("[getBanner:first]", error.message);
-  }
-
-  // Hedef dil yoksa varsayılana düş
-  if (!data) {
-    const fallback = await getDefaultLang();
-    const res = await supabase
-      .from("v_banner")
-      .select("*")
-      .eq("lang_code", fallback)
-      .limit(1)
-      .maybeSingle();
-
-    if (res.error) {
-      console.error("[getBanner:fallback]", res.error.message);
-      return null;
+    // Bulamazsak varsayılan dile düş
+    if (!b) {
+      const fallback = await getDefaultLang();
+      b = banners.find((x) => x.lang_code === fallback);
     }
-    return (res.data as BannerRow) ?? null;
-  }
+    if (!b) return null;
 
-  return data as BannerRow;
+    const s = settings ?? {
+      site_name: "",
+      logo_url: null,
+      phone: null,
+      email: null,
+      store_location_url: null,
+      facebook_url: null,
+      instagram_url: null,
+      twitter_url: null,
+      linkedin_url: null,
+      whatsapp_url: null,
+      footer_text: null,
+      working_hours: null,
+    };
+
+    const row: BannerRow = {
+      site_name: s.site_name,
+      logo_url: s.logo_url,
+      phone: s.phone,
+      email: s.email,
+      store_location_url: s.store_location_url,
+      facebook_url: s.facebook_url,
+      instagram_url: s.instagram_url,
+      twitter_url: s.twitter_url,
+      linkedin_url: s.linkedin_url,
+      whatsapp_url: s.whatsapp_url,
+      footer_text: s.footer_text,
+      working_hours: s.working_hours,
+
+      lang_code: b.lang_code,
+      promo_text: b.promo_text,
+      promo_cta: b.promo_cta,
+      promo_url: b.promo_url,
+    };
+
+    return row;
+  } catch (e) {
+    console.error("[getBanner]", (e as Error).message);
+    return null;
+  }
 }
 
 /** Ergonomi: tek çağrıda hem ayarlar hem banner */
@@ -130,6 +179,5 @@ export async function getSiteSettingsWithBanner(lang?: string) {
     getSiteSettings(),
     getBanner(lang),
   ]);
-
   return { settings, banner };
 }

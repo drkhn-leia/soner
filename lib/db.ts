@@ -1,3 +1,4 @@
+// @/lib/db.ts
 import { promises as fs } from "fs";
 import path from "path";
 import type {
@@ -6,6 +7,19 @@ import type {
   NavigationDb,
   CarouselDb,
   AdsDb,
+  Language, // NEW
+  LanguagesDb, // NEW
+} from "./dbTypes";
+
+// İsteğe bağlı: tipleri bu modül üzerinden de erişilebilir yapalım
+export type {
+  SiteSettingsDb,
+  BannersDb,
+  NavigationDb,
+  CarouselDb,
+  AdsDb,
+  Language, // NEW
+  LanguagesDb, // NEW
 } from "./dbTypes";
 
 // --------------------------------------------------
@@ -80,7 +94,7 @@ export async function writeCarousel(db: CarouselDb): Promise<void> {
 // --------------------------------------------------
 // Ads
 // --------------------------------------------------
-const ADS_FILE = "adsBelowLanding.json";
+const ADS_FILE = "adsBelowLanding.json"; // Dosyanız bu isimdeyse sorun yok
 
 export async function readAds(): Promise<AdsDb> {
   return readJsonFile<AdsDb>(ADS_FILE);
@@ -90,8 +104,87 @@ export async function writeAds(db: AdsDb): Promise<void> {
   await writeJsonFile<AdsDb>(ADS_FILE, db);
 }
 
-// ----------------------------------------------------------------------------------------------------
+// --------------------------------------------------
+// Languages (opsiyonel, varsa okuyalım)
+// --------------------------------------------------
+const LANGUAGES_FILE = "languages.json";
 
+async function readLanguagesSafe(): Promise<LanguagesDb | null> {
+  try {
+    return await readJsonFile<LanguagesDb>(LANGUAGES_FILE);
+  } catch {
+    return null;
+  }
+}
+
+// ----------------------------------------------------------------------------------------------------
+// UYUMLULUK Katmanı (Legacy): readDB / writeDB
+// Admin sayfaları bunları import ediyor; burada tek obje halinde toplayıp döndürüyoruz.
+// ----------------------------------------------------------------------------------------------------
+export type LegacyDbShape = {
+  site_settings?: SiteSettingsDb["site_settings"];
+  banners?: BannersDb["banners"];
+  languages?: Language[]; // /data/languages.json varsa doldurulur
+  navigation?: NavigationDb["navigation"];
+  landingCarousel?: CarouselDb["landingCarousel"];
+  // NOT: ads parçanız legacy DB'de hiç olmamış; ihtiyaç olursa ekleyebiliriz.
+};
+
+export async function readDB(): Promise<LegacyDbShape> {
+  const out: LegacyDbShape = {};
+
+  try {
+    const { site_settings } = await readSiteSettings();
+    out.site_settings = site_settings;
+  } catch {}
+
+  try {
+    const { banners } = await readBanners();
+    out.banners = banners;
+  } catch {}
+
+  try {
+    const langs = await readLanguagesSafe();
+    if (langs) out.languages = langs.languages;
+  } catch {}
+
+  try {
+    const { navigation } = await readNavigation();
+    out.navigation = navigation;
+  } catch {}
+
+  try {
+    const { landingCarousel } = await readCarousel();
+    out.landingCarousel = landingCarousel;
+  } catch {}
+
+  return out;
+}
+
+export async function writeDB(db: LegacyDbShape): Promise<void> {
+  const tasks: Promise<any>[] = [];
+
+  if (db.site_settings) {
+    tasks.push(writeSiteSettings({ site_settings: db.site_settings }));
+  }
+  if (db.banners) {
+    tasks.push(writeBanners({ banners: db.banners }));
+  }
+  if (db.navigation) {
+    tasks.push(writeNavigation({ navigation: db.navigation }));
+  }
+  if (db.landingCarousel) {
+    tasks.push(writeCarousel({ landingCarousel: db.landingCarousel }));
+  }
+  // languages için isterseniz burada yazma desteği de açabilirsiniz:
+  // if (db.languages) await writeJsonFile(LANGUAGES_FILE, { languages: db.languages });
+
+  await Promise.all(tasks);
+}
+
+// ----------------------------------------------------------------------------------------------------
+// Ek olarak yeni router API'niz (readDb/writeDb) kalsın
+// ----------------------------------------------------------------------------------------------------
 type DbKind = "siteSettings" | "banners" | "navigation" | "carousel" | "ads";
 
 export async function readDb(kind: DbKind) {
