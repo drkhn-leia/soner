@@ -1,22 +1,19 @@
 import Sidebar from "./_components/Sidebar";
 import Header from "./_components/Header";
 
-// app/(admin)/admin/layout.tsx
+// /app/(admin)/admin/layout.tsx
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
-import { getSession } from "@/lib/auth/session";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
-  const session = await getSession();
-  if (!session.user || session.user.role !== "admin") {
-    const h = await headers();
-    const host = h.get("host")!;
-    const proto = process.env.NODE_ENV === "production" ? "https" : "http";
-    const url = `${proto}://${host}/login?redirect=${encodeURIComponent("/admin")}`;
-    redirect(url); // ← Göreli değil, mutlak
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login?redirect=/admin");
   }
   return (
     <main className="h-screen w-full overflow-hidden bg-gray-50">

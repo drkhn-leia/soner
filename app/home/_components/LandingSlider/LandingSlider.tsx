@@ -1,3 +1,4 @@
+// @/app/_components/LandingSlider/LandingSlider.tsx
 import Image from "next/image";
 import SliderItem from "./_components/SliderItem";
 import SocialPart from "./_components/SocialPart";

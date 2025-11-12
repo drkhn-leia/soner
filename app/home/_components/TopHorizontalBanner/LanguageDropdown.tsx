@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { useLanguage } from "@/lib/LanguageProvider";
+import { useLanguage } from "@/components/LanguageProvider";
 
 type Language = { code: string; name: string; is_default: boolean };
 

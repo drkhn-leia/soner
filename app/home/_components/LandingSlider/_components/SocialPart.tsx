@@ -1,4 +1,4 @@
-
+//Social Part
 
 // CircularText.tsx
 import { FaFacebookF } from "react-icons/fa";

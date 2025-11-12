@@ -5,16 +5,28 @@ import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
+const heroImages: string[] = (() => {
+    try {
+        return JSON.parse(process.env.NEXT_PUBLIC_HERO_IMAGES || "[]");
+    } catch {
+        return [];
+    }
+})();
+
 export default function Home() {
-    const [rnd, setRnd] = useState<string>("");
+    // SSR'da rastgelelik yok → mismatch yok
+    const [picked, setPicked] = useState<string | null>(null);
+    const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
-        // Her client yüklemesinde yeni parametre
-        setRnd(Math.random().toString(36).slice(2, 10));
+        if (heroImages.length > 0) {
+            const idx = Math.floor(Math.random() * heroImages.length);
+            setPicked(heroImages[idx]);
+        }
     }, []);
 
     return (
-        <>
+        <div className="w-screen h-screen bg-black">
             <div className="absolute flex flex-col justify-center items-center w-full h-screen text-white z-20">
                 <Image src="/nost.png" width={200} height={200} alt="Logo" className="spin-slow" />
                 <p className="text-4xl font-poppins mt-10">Sitemiz yapım aşamasındadır.</p>
@@ -22,17 +34,21 @@ export default function Home() {
             </div>
 
             <div>
-                <div className="absolute w-screen h-screen top-0 left-0 select-none bg-black opacity-80 z-10" />
-                {rnd && (
+                <div className="absolute inset-0 z-10 bg-black/50" />
+                {picked && (
                     <Image
-                        src={`https://picsum.photos/2048/1024?seed=${rnd}`}
+                        src={picked}
                         alt="Background"
                         fill
-                        className="select-none"
                         priority
+                        placeholder="empty"
+                        className={`select-none object-cover transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"
+                            }`}
+                        sizes="100vw"
+                        onLoad={() => setLoaded(true)}
                     />
                 )}
             </div>
-        </>
+        </div>
     );
 }

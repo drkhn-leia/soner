@@ -1,46 +1,46 @@
-// @/app/_components/LandingSlider/_components/SliderItem.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import useSWR from "swr";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
 import SliderCard from "./SliderCard";
-import { useLanguage } from "@/lib/LanguageProvider";
+import { useLanguage } from "@/components/LanguageProvider";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type ApiSlide = {
+  id: number;
+  lang_code: string;
   title1: string;
   title2: string;
-  imageLink: string;
-  subText: string;
+  image_link: string;
+  sub_text: string;
   tips: string[];
-  buttonLink: string;
+  button_link: string;
 };
 
+const fetcher = async (lang: string): Promise<ApiSlide[]> => {
+  const supabase = createSupabaseBrowserClient();
+  const { data, error } = await supabase
+    .from("landing_carousel")
+    .select("id, lang_code, title1, title2, image_link, sub_text, tips, button_link")
+    .eq("lang_code", lang)
+    .order("id", { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data || [];
+};
 
 export default function SliderItem() {
-  const { lang } = useLanguage();             // ✅ Sizin provider’ınız
-  const [slides, setSlides] = useState<ApiSlide[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { lang } = useLanguage();
+  const { data: slides, error, isLoading } = useSWR(`carousel-${lang}`, () => fetcher(lang), {
+    revalidateOnFocus: false,
+  });
 
-  useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    (async () => {
-      const res = await fetch(`/api/carousel?lang=${lang}`, { cache: "no-store" });
-      const data = await res.json();
-      if (mounted) {
-        setSlides(data.carousel ?? []);
-        setLoading(false);
-      }
-    })();
-    return () => { mounted = false; };
-  }, [lang]); // ✅ dil değişince yeniden çek
-
-  if (loading) return <div className="py-8">Yükleniyor…</div>;
-  if (!slides.length) return <div className="py-8">İçerik bulunamadı.</div>;
-
+  if (isLoading) return <div className="py-8">Yükleniyor…</div>;
+  if (error) return <div className="py-8 text-red-500">Bir hata oluştu.</div>;
+  if (!slides?.length) return <div className="py-8">İçerik bulunamadı.</div>;
   return (
     <section className="w-full h-full pb-10">
       <Swiper
@@ -55,11 +55,12 @@ export default function SliderItem() {
           const mapped = {
             title: s.title1,
             title2: s.title2,
-            description: s.subText,
+            description: s.sub_text,
             ctaText: lang === "tr" ? "Devamı" : "Learn more",
-            imageSrc: s.imageLink,
+            imageSrc: s.image_link,
             imageAlt: `${s.title1} ${s.title2}`,
-            href: s.buttonLink,
+            href: s.button_link,
+            tips: s.tips ?? [],            // ✅ EKLENDİ
           };
           return (
             <SwiperSlide key={`slide-${i}`}>

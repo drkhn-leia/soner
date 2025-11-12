@@ -1,24 +1,40 @@
-// @/app/_components/TopHorizontalBanner/topHorizontalBanner.tsx
-
 "use client";
 
 import useSWR from "swr";
 import { FaPhone, FaEnvelope } from "react-icons/fa6";
 import Dropdown from "./LanguageDropdown";
-import { useLanguage } from "@/lib/LanguageProvider";
+import { useLanguage } from "@/components/LanguageProvider";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+const fetcher = async (lang: string) => {
+  const supabase = createSupabaseBrowserClient();
+
+  // site_settings
+  const { data: settings } = await supabase
+    .from("site_settings")
+    .select("*")
+    .limit(1)
+    .maybeSingle();
+
+  // banner_translations
+  const { data: banner } = await supabase
+    .from("banner_translations")
+    .select("*")
+    .eq("lang_code", lang)
+    .maybeSingle();
+
+  return { settings, banner };
+};
 
 export default function TopHorizontalBanner() {
   const { lang } = useLanguage();
-  const { data } = useSWR(`/api/settings?lang=${lang}`, fetcher, {
+
+  const { data } = useSWR(`top-banner-${lang}`, () => fetcher(lang), {
     revalidateOnFocus: false,
   });
 
-  const settings = data?.site_settings;
-  const banner =
-    data?.banners?.find((b: any) => b.lang_code === lang) ??
-    data?.banners?.[0];
+  const settings = data?.settings;
+  const banner = data?.banner;
 
   if (!settings) return null;
 
@@ -27,27 +43,21 @@ export default function TopHorizontalBanner() {
       <div className="flex flex-row justify-between items-center w-full max-w-7xl text-sm text-white">
         <div className="flex flex-row gap-8">
           {settings.phone && (
-            <a href={`tel:${settings.phone}`} className="flex flex-row items-center gap-2">
+            <a href={`tel:${settings.phone}`} className="flex items-center gap-2">
               <FaPhone /> {settings.phone}
             </a>
           )}
           {settings.email && (
-            <a href={`mailto:${settings.email}`} className="flex flex-row items-center gap-2">
+            <a href={`mailto:${settings.email}`} className="flex items-center gap-2">
               <FaEnvelope /> {settings.email}
             </a>
           )}
         </div>
 
         <div className="flex flex-row gap-2">
-          {banner?.promo_text && (
-            <a href={banner.promo_url ?? "#"}>{banner.promo_text}</a>
-          )}
-          {banner?.promo_text && banner?.promo_cta && (
-            <span className="opacity-70">|</span>
-          )}
-          {banner?.promo_cta && (
-            <a href={banner.promo_url ?? "#"}>{banner.promo_cta}</a>
-          )}
+          {banner?.promo_text && <a href={banner.promo_url ?? "#"}>{banner.promo_text}</a>}
+          {banner?.promo_text && banner?.promo_cta && <span className="opacity-70">|</span>}
+          {banner?.promo_cta && <a href={banner.promo_url ?? "#"}>{banner.promo_cta}</a>}
         </div>
 
         <div className="flex flex-row items-center gap-2">

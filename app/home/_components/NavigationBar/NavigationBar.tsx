@@ -5,50 +5,59 @@ import Link from "next/link";
 import useSWR from "swr";
 import { SlUser, SlBasket } from "react-icons/sl";
 import Dropdown from "./_components/Dropdown";
+import { useLanguage } from "@/components/LanguageProvider";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-import { useLanguage } from "@/lib/LanguageProvider";
-import type { NavItem } from "@/lib/dbTypes";
+const fetcher = async (lang: string) => {
+  const supabase = createSupabaseBrowserClient();
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+  const { data } = await supabase
+    .from("navigation_links")
+    .select("*")
+    .eq("lang_code", lang)
+    .order("parent_id", { ascending: true })
+    .order("id", { ascending: true });
+
+  const tree: any[] = [];
+  const map = new Map();
+
+  // Basit tree builder
+  data?.forEach((item) => map.set(item.id, { ...item, children: [] }));
+  data?.forEach((item) => {
+    if (item.parent_id) map.get(item.parent_id).children.push(map.get(item.id));
+    else tree.push(map.get(item.id));
+  });
+
+  return tree;
+};
 
 export default function NavigationBar() {
   const { lang } = useLanguage();
-
-  const { data } = useSWR<{ navigation: NavItem[] }>(
-    `/api/navigation?lang=${lang}`,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      dedupingInterval: 5_000,
-      keepPreviousData: true,
-    }
-  );
-
-  const items: NavItem[] = data?.navigation ?? [];
+  const { data: nav } = useSWR(`nav-${lang}`, () => fetcher(lang), {
+    revalidateOnFocus: false,
+  });
 
   return (
     <div className="relative w-full max-w-7xl h-24 flex items-center justify-between font-onest font-semibold">
       <div className="text-3xl font-poppins font-bold">
-        <Link href="/" className="cursor-pointer">
-          Nost Copy
-        </Link>
+        <p>Nost Copy</p>
       </div>
 
       <ul className="flex space-x-8 items-center">
-        {items.map((item) =>
-          item.children?.length ? (
-            <li key={item.label}>
-              <Dropdown label={item.label} items={item.children} />
+        {nav?.map((item) =>
+          item.children?.length > 0 ? (
+            <li key={item.id}>
+              <Dropdown
+                label={item.label}
+                items={item.children.map((c: any) => ({
+                  name: c.label,
+                  href: c.href,
+                }))}
+              />
             </li>
           ) : (
-            <li key={item.label} className="text-gray-700 hover:text-blue-500">
-              {item.href ? (
-                <Link href={item.href} className="cursor-pointer">
-                  {item.label}
-                </Link>
-              ) : (
-                <span className="cursor-default">{item.label}</span>
-              )}
+            <li key={item.id} className="text-gray-700 hover:text-blue-500">
+              <Link href={item.href ?? "#"}>{item.label}</Link>
             </li>
           )
         )}

@@ -3,7 +3,7 @@
 
 import useSWR from "swr";
 import { Icon } from "@iconify/react";
-import { useLanguage } from "@/lib/LanguageProvider";
+import { useLanguage } from "@/components/LanguageProvider";
 
 type AdItem = { text: string; icon: string };
 

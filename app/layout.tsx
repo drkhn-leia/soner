@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Oswald, Poppins, Onest } from "next/font/google";
 import "./globals.css";
+import { LanguageProvider } from "@/components/LanguageProvider";
 
 const geistSans = Geist({
     subsets: ["latin"],
@@ -43,7 +44,9 @@ export default function RootLayout({
     return (
         <html>
             <body className={`${geistSans.variable} ${oswald.variable} ${poppins.variable} ${onest.variable} antialiased`}>
-                {children}
+                <LanguageProvider>
+                    {children}
+                </LanguageProvider>
             </body>
         </html>
     )

@@ -1,6 +1,5 @@
 // @/app/_components/NavigationBar/_components/Dropdown.tsx
 
-
 "use client";
 import Link from "next/link";
 
@@ -22,8 +21,8 @@ export default function Dropdown({ label, items }: DropdownProps) {
         className="absolute top-full -mt-4 left-0 bg-white border border-gray-200 shadow-lg rounded-md py-2 w-48
         opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-300 z-10"
       >
-        {items.map((item) => (
-          <li key={item.label} className="px-4 py-2 whitespace-nowrap">
+        {items.map((item, index) => (
+          <li key={`${item.label}-${index}`} className="px-4 py-2 whitespace-nowrap">
             {item.href ? (
               <Link
                 href={item.href}
