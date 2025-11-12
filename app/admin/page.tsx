@@ -1,10 +1,10 @@
-export default function AdminHomePage() {
+// app/admin/page.tsx
+export default function AdminHome() {
   return (
-    <>
-      <h1 className="text-2xl font-semibold">Admin Panel</h1>
-      <p className="text-sm text-gray-600 mt-2">
-        Hoş geldiniz. Soldan bir menü seçin.
-      </p>
-    </>
+    <div className="p-6">
+
+      <h2 className="text-xl font-semibold">Admin Dashboard</h2>
+      <p className="mt-2 text-sm text-gray-600">Korumalı içerik.</p>
+    </div>
   );
 }
