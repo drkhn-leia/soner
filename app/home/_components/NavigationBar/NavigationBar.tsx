@@ -1,6 +1,7 @@
 // @/app/_components/NavigationBar/NavigationBar.tsx
 "use client";
 
+import { useState, useEffect } from "react"
 import Link from "next/link";
 import useSWR from "swr";
 import { SlUser, SlBasket } from "react-icons/sl";
@@ -8,24 +9,49 @@ import Dropdown from "./_components/Dropdown";
 import { useLanguage } from "@/components/LanguageProvider";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
+import { useAppLoading } from "@/components/AppLoadingProvider";
+
+type NavRow = {
+  id: number;
+  lang_code: string;
+  label: string;
+  href: string | null;
+  parent_id: number | null;
+};
+type NavNode = NavRow & { children: NavNode[] };
+
 const fetcher = async (lang: string) => {
   const supabase = createSupabaseBrowserClient();
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("navigation_links")
-    .select("*")
+    .select("id, lang_code, label, href, parent_id")
     .eq("lang_code", lang)
     .order("parent_id", { ascending: true })
     .order("id", { ascending: true });
 
-  const tree: any[] = [];
-  const map = new Map();
+  if (error) throw error;
 
-  // Basit tree builder
-  data?.forEach((item) => map.set(item.id, { ...item, children: [] }));
-  data?.forEach((item) => {
-    if (item.parent_id) map.get(item.parent_id).children.push(map.get(item.id));
-    else tree.push(map.get(item.id));
+  const rows = (data ?? []) as NavRow[];
+
+  const tree: NavNode[] = [];
+  const map = new Map<number, NavNode>();
+
+  // Kayıtları map’e koy
+  rows.forEach((item) => {
+    map.set(item.id, { ...item, children: [] });
+  });
+
+
+  // Parent-child ilişkisi kur
+  rows.forEach((item) => {
+    const node = map.get(item.id)!;
+    if (item.parent_id) {
+      const parent = map.get(item.parent_id);
+      if (parent) parent.children.push(node);
+    } else {
+      tree.push(node);
+    }
   });
 
   return tree;
@@ -33,24 +59,44 @@ const fetcher = async (lang: string) => {
 
 export default function NavigationBar() {
   const { lang } = useLanguage();
-  const { data: nav } = useSWR(`nav-${lang}`, () => fetcher(lang), {
-    revalidateOnFocus: false,
-  });
+
+  const { start, stop } = useAppLoading();
+
+
+  const { data: nav, isLoading } = useSWR<NavNode[]>(
+    `nav-${lang}`,
+    () => fetcher(lang),
+    { revalidateOnFocus: false }
+  );
+
+  const [registered, setRegistered] = useState(false);
+
+  useEffect(() => {
+    if (isLoading && !registered) {
+      start();
+      setRegistered(true);
+    }
+
+    if (!isLoading && registered) {
+      stop();
+      setRegistered(false);
+    }
+  }, [isLoading, registered, start, stop]);
 
   return (
     <div className="relative w-full max-w-7xl h-24 flex items-center justify-between font-onest font-semibold">
       <div className="text-3xl font-poppins font-bold">
-        <p>Nost Copy</p>
+        <Link href={"/"}>Nost Copy</Link>
       </div>
 
       <ul className="flex space-x-8 items-center">
-        {nav?.map((item) =>
+        {nav?.map((item: any) =>
           item.children?.length > 0 ? (
             <li key={item.id}>
               <Dropdown
                 label={item.label}
                 items={item.children.map((c: any) => ({
-                  name: c.label,
+                  label: c.label,      // ✅ Artık label gönderiyoruz
                   href: c.href,
                 }))}
               />

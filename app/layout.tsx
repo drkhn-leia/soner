@@ -1,7 +1,9 @@
+// /app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Oswald, Poppins, Onest } from "next/font/google";
 import "./globals.css";
 import { LanguageProvider } from "@/components/LanguageProvider";
+import { AppLoadingProvider } from "@/components/AppLoadingProvider";
 
 const geistSans = Geist({
     subsets: ["latin"],
@@ -40,14 +42,17 @@ export default function RootLayout({
 }: {
     children: React.ReactNode;
 }) {
-
     return (
         <html>
-            <body className={`${geistSans.variable} ${oswald.variable} ${poppins.variable} ${onest.variable} antialiased`}>
+            <body
+                className={`${geistSans.variable} ${oswald.variable} ${poppins.variable} ${onest.variable} antialiased`}
+            >
                 <LanguageProvider>
-                    {children}
+                    <AppLoadingProvider>
+                        {children}
+                    </AppLoadingProvider>
                 </LanguageProvider>
             </body>
         </html>
-    )
+    );
 }

@@ -1,9 +1,8 @@
-// @/app/_components/TopHorizontalBanner/LanguageDropdown.tsx
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
-
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Language = { code: string; name: string; is_default: boolean };
 
@@ -14,22 +13,31 @@ export default function Dropdown() {
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const popRef = useRef<HTMLDivElement | null>(null);
 
-  // Dilleri yerel API'den çek
+  // Dilleri Supabase'ten çek
   useEffect(() => {
     let mounted = true;
+
     (async () => {
       try {
-        const res = await fetch("/api/languages", { cache: "no-store" });
-        const data = await res.json();
+        const supabase = createSupabaseBrowserClient();
+        const { data, error } = await supabase
+          .from("languages")
+          .select("code,name,is_default")
+          .order("is_default", { ascending: false })
+          .order("code", { ascending: true });
+
+        if (error) throw error;
+
+        const list: Language[] = data ?? [];
         if (!mounted) return;
 
-        const list: Language[] = data?.languages ?? [];
-        // Güvenli fallback (dosya boşsa bile dropdown çalışsın)
         setLanguages(
-          list.length ? list : [
-            { code: "tr", name: "Türkçe", is_default: true },
-            { code: "en", name: "English", is_default: false },
-          ]
+          list.length
+            ? list
+            : [
+              { code: "tr", name: "Türkçe", is_default: true },
+              { code: "en", name: "English", is_default: false },
+            ]
         );
       } catch {
         if (!mounted) return;
@@ -39,13 +47,16 @@ export default function Dropdown() {
         ]);
       }
     })();
-    return () => { mounted = false; };
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Dışarı tıklayınca kapat
   useEffect(() => {
     if (!isOpen) return;
-    const handle = (e: MouseEvent) => {
+    const onMouseDown = (e: MouseEvent) => {
       const t = e.target as Node;
       if (popRef.current?.contains(t)) return;
       if (btnRef.current?.contains(t)) return;
@@ -54,19 +65,17 @@ export default function Dropdown() {
     const onEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") setIsOpen(false);
     };
-    document.addEventListener("mousedown", handle);
+    document.addEventListener("mousedown", onMouseDown);
     document.addEventListener("keydown", onEsc);
     return () => {
-      document.removeEventListener("mousedown", handle);
+      document.removeEventListener("mousedown", onMouseDown);
       document.removeEventListener("keydown", onEsc);
     };
   }, [isOpen]);
 
   const onSelect = (code: string) => {
     setIsOpen(false);
-    setLang(code);                     // Context + cookie + <html lang> (Provider içinde)
-    // Eğer server komponentleri cookie'ye göre veri çekiyorsa,
-    // LanguageProvider.setLang içinde router.refresh() ekleyebilirsiniz.
+    setLang(code); // Provider içinde cookie/html lang/router.refresh yönetiyorsunuz
   };
 
   return (
@@ -96,7 +105,7 @@ export default function Dropdown() {
       {isOpen && (
         <div
           ref={popRef}
-          className="absolute right-0 mt-2 w-32 rounded-lg shadow-lg bg-white ring-1 ring-black/5 z-50"
+          className="absolute right-0 mt-2 w-40 rounded-lg shadow-lg bg-white ring-1 ring-black/5 z-50"
           role="listbox"
           aria-label="Languages"
         >

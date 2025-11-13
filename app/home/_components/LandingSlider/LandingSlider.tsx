@@ -6,7 +6,7 @@ import SocialPart from "./_components/SocialPart";
 export default function LandingSlider() {
   return (
     <>
-      <div className="flex justify-center items-center w-full">
+      <div className="flex justify-center items-center w-full mt-10">
         <div className="pointer-events-none absolute inset-0 -z-10">
           <Image
             src="/h1-bg01.svg"
